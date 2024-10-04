@@ -1,0 +1,49 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "lib": [
+      "ES2015",
+      "ES2016",
+      "ES2017",
+      "ES2018",
+      "ES2019",
+      "ES2020",
+      "ES2021",
+      "ES2022"
+    ],
+    "module": "CommonJS",
+    "target": "ES2022",
+    "inlineSourceMap": true,
+    "importHelpers": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": false,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "ignoreDeprecations": "5.0",
+    "checkJs": true,
+    "strictPropertyInitialization": true,
+    "strictBindCallApply": true,
+    "declaration": true,
+    "noEmitOnError": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "test"],
+  "typedocOptions": {
+    "entryPoints": [ "src/index.ts" ],
+    "out": "docs",
+    "plugin": [
+      "typedoc-plugin-extras",
+      "typedoc-plugin-mdn-links",
+      "@ayios/typedoc-plugin-merge-modules",
+    ],
+    "excludeInternal": true,
+    "excludeExternals": true
+  }
+}
