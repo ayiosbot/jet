@@ -44,6 +44,6 @@
       "@ayios/typedoc-plugin-merge-modules",
     ],
     "excludeInternal": true,
-    "excludeExternals": true
+    "excludeExternals": false
   }
 }

@@ -1,13 +1,16 @@
 import {
-    AnyInteractionChannel, AnyTextableChannel, ApplicationCommandTypes, Attachment, Channel,
-    ChannelTypes, CommandInteraction, CreateMessageOptions, Guild, InteractionContent,
+    AnyInteractionChannel, AnyTextableChannel, ApplicationCommandOptionTypes, ApplicationCommandTypes, Attachment, Channel,
+    ChannelTypes, ChatInputApplicationCommand, CommandInteraction, CreateApplicationCommandOptions, CreateChatInputApplicationCommandOptions, CreateMessageOptions, Guild, InteractionContent,
     InteractionOptionsWrapper, InteractionTypes, Member, Message, MessageFlags, Role,
     SubCommandArray, Uncached, User
 } from 'oceanic.js';
 import Client from './Client';
+import crypto from 'crypto';
 import Dispatcher from './Dispatcher';
-import Registry from './Registry';
 import Logger from '@ayios/logger';
+import Module from './Module';
+import Registry from './Registry';
+import { CachedCollection } from '@ayios/collection';
 
 /** A result telling the system if a command was run successfully or not. */
 export enum CommandResult {
@@ -39,7 +42,7 @@ export enum ContextType {
     INTERACTION = 1
 }
 
-export enum CommandArgumentType {
+export enum ArgumentType {
     /**
      * Return attachment info.
      * @warning Recommended for slash commands only.
@@ -58,6 +61,8 @@ export enum CommandArgumentType {
     SUB_COMMAND_GROUP,
     USER
 }
+
+export type CommandCause = Message<AnyTextableChannel | Uncached> | CommandInteraction<AnyInteractionChannel | Uncached, ApplicationCommandTypes>;
 
 // Must register groups before commands
 export interface CommandDefinition {
@@ -83,9 +88,9 @@ export interface CommandDefinition {
     timeoutResult?: CommandResult;
     /** Unique guild IDs to roll the command out to when ready */
     rollout?: string[];
-    arguments: CommandArgument[];
-    slashArguments: CommandArgument[];
-    prefixArguments: CommandArgument[];
+    arguments?: CommandArgument[];
+    slashArguments?: CommandArgument[];
+    prefixArguments?: CommandArgument[];
     /** None of this is evaluated for a DM channel. */
     permissions?: {
         /** Determines if the client has `clientGuild` permissions in the current guild. */
@@ -99,7 +104,7 @@ export interface CommandDefinition {
     };
     example?: string[] | { prefix?: string[]; slash?: string[]; };
     /** Defaults to slash true */
-    registry: {
+    registry?: {
         prefix?: boolean;
         slash?: boolean;
         message?: boolean;
@@ -109,7 +114,7 @@ export interface CommandDefinition {
 
 
 export interface CommandArgumentInput {
-    type: CommandArgumentType;
+    type: ArgumentType;
     name: string;
     value: any;
 }
@@ -118,37 +123,37 @@ export interface CommandArgumentInput {
 export namespace Arguments {
     export type ArgumentChoices = { name: string, value: string}[];
     export interface SubcommandGroupCommandArgument extends BaseInputCommandArgument {
-        type: CommandArgumentType.SUB_COMMAND_GROUP;
+        type: ArgumentType.SUB_COMMAND_GROUP;
         /** What other subcommands are there? */
         arguments: SubcommandCommandArgument[];
     }
     export interface SubcommandCommandArgument extends BaseInputCommandArgument {
-        type: CommandArgumentType.SUB_COMMAND;
+        type: ArgumentType.SUB_COMMAND;
         /** What other arguments are threre? */
         arguments?: CommandArgument[];
     }
     export interface AttachmentCommandArgument extends BaseInputCommandArgument {
-        type: CommandArgumentType.ATTACHMENT;
+        type: ArgumentType.ATTACHMENT;
     }
     export interface ChannelCommandArgument extends BaseInputCommandArgument {
-        type: CommandArgumentType.CHANNEL;
+        type: ArgumentType.CHANNEL;
         /** Unique valid channel types */
         channelTypes?: ChannelTypes;
     }
     export interface BooleanCommandArgument extends BaseInputCommandArgument {
-        type: CommandArgumentType.BOOLEAN;
+        type: ArgumentType.BOOLEAN;
     }
     export interface RoleCommandArgument extends BaseInputCommandArgument {
-        type: CommandArgumentType.ROLE;
+        type: ArgumentType.ROLE;
     }
     export interface MentionableCommandArgument extends BaseInputCommandArgument {
-        type: CommandArgumentType.MENTIONABLE;
+        type: ArgumentType.MENTIONABLE;
     }
     export interface UserCommandArgument extends BaseInputCommandArgument {
-        type: CommandArgumentType.USER;
+        type: ArgumentType.USER;
     }
     export interface NumberCommandArgument extends BaseInputCommandArgument {
-        type: CommandArgumentType.NUMBER;
+        type: ArgumentType.NUMBER;
         /** Whether the argument is autocomplete */
         autocomplete?: boolean;
         /** Minimum value */
@@ -158,7 +163,7 @@ export namespace Arguments {
     }
     export type IntegerCommandArgument = NumberCommandArgument;
     export interface StringCommandArgument extends BaseInputCommandArgument {
-        type: CommandArgumentType.STRING;
+        type: ArgumentType.STRING;
         /** Whether the argument is autocomplete */
         autocomplete?: boolean;
         /** The minimum length for the string */
@@ -171,7 +176,7 @@ export namespace Arguments {
         /** Whether the argument is optional */
         optional?: boolean;
         /** Command argument type */
-        type: CommandArgumentType;
+        type: ArgumentType;
     }
     export interface BaseCommandArgument {
         /** Argument name */
@@ -215,12 +220,17 @@ export class ArgumentSelector {
             this.message = message;
         }
     }
-    private search(name: string, type: CommandArgumentType) {
-        return this.args.find(a => a.name === name && a.type === CommandArgumentType.ATTACHMENT);
+    private search(name: string, type: ArgumentType) {
+        return this.args.find(a => a.name === name && a.type === ArgumentType.ATTACHMENT);
     }
+    /**
+     * 
+     * @param name 
+     * @returns Attachment
+     */
     getAttachment(name: string): Attachment | undefined {
         if (this.type === CommandType.PREFIX) {
-            // const result = this.args.find(a => a.name === name && a.type === CommandArgumentType.ATTACHMENT);
+            // const result = this.args.find(a => a.name === name && a.type === ArgumentType.ATTACHMENT);
             throw new Error('Not implemented: Prefix command attachments');
             // return '' as any;
         } else if (this.type === CommandType.SLASH) {
@@ -231,7 +241,7 @@ export class ArgumentSelector {
         if (this.type === CommandType.SLASH) {
             return this.int!.data.options.getBoolean(name);
         }
-        const data = this.search(name, CommandArgumentType.BOOLEAN)?.value;
+        const data = this.search(name, ArgumentType.BOOLEAN)?.value;
         if (data === undefined) return undefined;
         if (data === 'y' || data === 'yes' || data === 'true' || data === true) {
             return true;
@@ -243,7 +253,7 @@ export class ArgumentSelector {
         if (this.type === CommandType.SLASH) {
             return this.int!.data.options.getCompleteChannel(name);
         }
-        const data = this.search(name, CommandArgumentType.CHANNEL)?.value;
+        const data = this.search(name, ArgumentType.CHANNEL)?.value;
         if (data === undefined) return;
         // todo: validate and pass args
         // const matches = CHANNEL_REGEX.exec(data);
@@ -254,7 +264,7 @@ export class ArgumentSelector {
         if (this.type === CommandType.SLASH) {
             return this.int!.data.options.getInteger(name);
         }
-        const data = this.search(name, CommandArgumentType.INTEGER)?.value;
+        const data = this.search(name, ArgumentType.INTEGER)?.value;
         if (data === undefined) return;
         const transformed = Number(data);
         if (isNaN(transformed) || transformed === Infinity) return;
@@ -264,7 +274,7 @@ export class ArgumentSelector {
         if (this.type === CommandType.SLASH) {
             return this.int!.data.options.getInteger(name);
         }
-        const data = this.search(name, CommandArgumentType.INTEGER)?.value;
+        const data = this.search(name, ArgumentType.INTEGER)?.value;
         if (data === undefined) return;
         const transformed = Number(data);
         if (isNaN(transformed) || transformed === Infinity) return;
@@ -285,7 +295,7 @@ export class ArgumentSelector {
         if (this.type === CommandType.SLASH) {
             return this.int!.data.options.getMentionable(name);
         }
-        const item = this.args.find(i => i.name === name && [ CommandArgumentType.USER, CommandArgumentType.ROLE ].includes(i.type))?.value;
+        const item = this.args.find(i => i.name === name && [ ArgumentType.USER, ArgumentType.ROLE ].includes(i.type))?.value;
         if (!item) return;
         return item as T;
     }
@@ -293,39 +303,41 @@ export class ArgumentSelector {
         if (this.type === CommandType.SLASH) {
             return this.int?.data.options.getRole(name);
         }
-        const role = this.search(name, CommandArgumentType.ROLE)?.value;
+        const role = this.search(name, ArgumentType.ROLE)?.value;
         return role;
     }
     getString<T extends string = string>(name: string): T | undefined {
         if (this.type === CommandType.SLASH) {
             return this.int!.data.options.getString(name);
         }
-        return this.search(name, CommandArgumentType.STRING)?.value;
+        return this.search(name, ArgumentType.STRING)?.value;
     }
     getUser(name: string): User | undefined {
         if (this.type === CommandType.SLASH) {
             return this.int?.data.options.getUser(name);
         }
-        return this.search(name, CommandArgumentType.USER)?.value;
+        return this.search(name, ArgumentType.USER)?.value;
     }
     getSubCommand<T extends SubCommandArray = SubCommandArray>(): T | undefined {
         if (this.type === CommandType.SLASH) {
             return this.int?.data.options.getSubCommand();
         }
-        const subcommandGroup = this.search('', CommandArgumentType.SUB_COMMAND_GROUP)?.value;
-        const subcommand = this.search('', CommandArgumentType.SUB_COMMAND)?.value;
+        const subcommandGroup = this.search('', ArgumentType.SUB_COMMAND_GROUP)?.value;
+        const subcommand = this.search('', ArgumentType.SUB_COMMAND)?.value;
         return [ subcommandGroup, subcommand ] as T;
     }
 }
 
-export interface CommandContextOptions {
-    cause: CommandInteraction<AnyInteractionChannel | Uncached, ApplicationCommandTypes> | Message;
+export interface CommandContextOptions<T = any> {
+    cause: CommandCause;
+    command: Command;
+    data?: T;
     // guildData?: GuildSchema;
     // premiumData?: PremiumKeySchema;
     // userData?: UserSchema;
 }
 
-export class CommandContext {
+export class CommandContext<T = any> {
     /**
      * Boolean indicating if replies should be ephemeral.
      * @important Overriden if flags are already in the payload.
@@ -343,14 +355,18 @@ export class CommandContext {
     public readonly user: User;
     public readonly member: Member | undefined;
     public readonly guild: Guild | undefined;
+    public readonly command: Command;
+    public readonly data: T;
     public readonly channel: AnyTextableChannel | undefined
     // public readonly premiumData: PremiumKeySchema | undefined;
     // public readonly userData: UserSchema | undefined;
     /** Undefined if DM command */
     // public readonly guildData: GuildSchema | undefined;
     // constructor(interaction: CommandInteraction<AnyInteractionChannel | Uncached, ApplicationCommandTypes> | Message, argData: CommandArgumentInput) {
-    constructor(options: CommandContextOptions) {
+    constructor(options: CommandContextOptions<T>) {
         this.cause = options.cause;
+        this.data = options.data as T;
+        this.command = options.command;
         this.type = this.cause instanceof Message ? ContextType.PREFIX : ContextType.INTERACTION;
         // this.guildData = options.guildData;
         // this.premiumData = options.premiumData;
@@ -380,10 +396,10 @@ export class CommandContext {
     public setOptions(options: CommandContextOptions) {
         Object.assign(this, options);
     }
-    // async fetchGuild<T>() {
+    // public async fetchGuild<T>() {
     //     return this.cause.client.DataProvider.guilds.fetch<T>(this.guild!.id, { cacheAfter: true, callIfNotCached: true });
     // }
-    // async fetchPremium() {
+    // public async fetchPremium() {
     //     if (!this.guild) throw new Error('Cannot fetch premium for a non-guild');
     //     return this.cause.client.DataService.guild.premium.getPremium(this.guild.id, true, true);
     //     // return this.cause.client.DataProvider.guilds.fetchPremium(this.guild.id)
@@ -423,13 +439,12 @@ export class CommandContext {
 }
 
 export class Command implements Partial<CommandDefinition> {
-    public readonly logger: typeof Logger;
     public readonly client: Client;
     public readonly name: string;
     public readonly slashName?: string;
     public readonly aliases?: string[] | undefined;
     public readonly nameLocalizations?: Record<string, string> | undefined;
-    public readonly description?: string | undefined;
+    public readonly description: string | undefined;
     public readonly descriptionLocalizations?: Record<string, string> | undefined;
     public readonly registry!: { prefix?: boolean; slash?: boolean; message?: boolean; user?: boolean; };
     public readonly permissions!: { clientGuild?: bigint; clientChannel?: bigint; authorGuild?: bigint; authorChannel?: bigint; } | undefined;
@@ -444,23 +459,21 @@ export class Command implements Partial<CommandDefinition> {
     public readonly timeoutResult?: CommandResult | undefined;
     public readonly guildOnly?: boolean | undefined;
     public readonly nsfw?: boolean | undefined;
-    private readonly _module!: string;
-    private readonly _filename: string;
-    public get module() {
-        // return this.client.Registry.mo
-        return this._module;
-    }
+    public readonly module!: string;
+    public readonly _filename: string;
+    /** <user_id>: expires_at */
+    public readonly cooldownMap = new CachedCollection<string, number>(1000);
     constructor(client: Client, definition: CommandDefinition, filename: string) {
         this.client = client;
         this._filename = filename;
         this.name = definition.name;
         this.slashName = definition.slashName || definition.name;
-        this.logger = Logger.fork({ component: { id: `${this._module}:${this.name}` } });
         Object.assign(this, definition);
+        if (definition.cooldown) this.cooldownMap.defaultMs = definition.cooldown * 2;
         if (!definition.registry) this.registry = { slash: true };
         if (!definition.name) throw new Error(`Command ${filename} requires a name`);
         if (!definition.description && (this.registry.slash || this.registry.prefix)) {
-            throw new Error(`Missing command description for ${this._module}:${this.name}`);
+            throw new Error(`Missing command description for ${this.module}:${this.name}`);
         }
         if (!definition.module) throw new Error(`Missing module for command ${this.name}; ${filename}`);
         if (definition.arguments) {
@@ -478,6 +491,133 @@ export class Command implements Partial<CommandDefinition> {
         if (this.slashArguments && !this.registry.slash) {
             Logger.warn('Command has slash arguments despite registry override');
         }
+    }
+    public getModule(): Module {
+        return this.client.registry.modules.get(this.module)!;
+    }
+    public async preliminaryExecution(context: CommandContext): Promise<[result: boolean, message?: string]> {
+        return Promise.resolve([ true ]);
+    }
+    public async postliminaryExecution(context: CommandContext, result: CommandResult): Promise<void> {
+        return Promise.resolve();
+    }
+    public async run(context: CommandContext): Promise<CommandResult> {
+        throw new Error(`No run function implemented for command ${this.module}:${this.name}`);
+    }
+    public getType(): ApplicationCommandTypes {
+        if (this.registry.user) {
+            return ApplicationCommandTypes.USER;
+        } else if (this.registry.message) {
+            return ApplicationCommandTypes.MESSAGE;
+        } else if (this.registry.slash) {
+            return ApplicationCommandTypes.CHAT_INPUT;
+        }
+        throw new Error('Unrecognized type');
+    }
+    public static toSlash(command: Command): CreateApplicationCommandOptions {
+        if (!command.registry.slash && !command.registry.message && !command.registry.user) {
+            throw new Error(`Command ${command.module}:${command.name} has no slash or context command support.`);
+        }
+
+        let options: CreateApplicationCommandOptions = {
+            name: command.slashName!,
+            description: command.description!,
+            dmPermission: !command.guildOnly,
+            type: command.getType()
+        }
+        if (command.nsfw) options.nsfw = true;
+        if (command.nameLocalizations) options.nameLocalizations = command.nameLocalizations;
+        if (command.descriptionLocalizations) {
+            (options as CreateChatInputApplicationCommandOptions).descriptionLocalizations = command.descriptionLocalizations;
+        }
+        if (command.permissions && Object.hasOwn(command.permissions, 'authorGuild')) {
+            options.defaultMemberPermissions = String(command.permissions.authorGuild!);
+        }
+        if (command.arguments) {
+            (options as CreateChatInputApplicationCommandOptions).options = [];
+            if (command.arguments.length < 0) return options;
+            const enumMap = [
+                [ ArgumentType.ATTACHMENT,        ApplicationCommandOptionTypes.ATTACHMENT        ],
+                [ ArgumentType.BOOLEAN,           ApplicationCommandOptionTypes.BOOLEAN           ],
+                [ ArgumentType.CHANNEL,           ApplicationCommandOptionTypes.CHANNEL           ],
+                [ ArgumentType.INTEGER,           ApplicationCommandOptionTypes.INTEGER           ],
+                [ ArgumentType.MENTIONABLE,       ApplicationCommandOptionTypes.MENTIONABLE       ],
+                [ ArgumentType.NUMBER,            ApplicationCommandOptionTypes.NUMBER            ],
+                [ ArgumentType.ROLE,              ApplicationCommandOptionTypes.ROLE              ],
+                [ ArgumentType.STRING,            ApplicationCommandOptionTypes.STRING            ],
+                [ ArgumentType.SUB_COMMAND,       ApplicationCommandOptionTypes.SUB_COMMAND       ],
+                [ ArgumentType.SUB_COMMAND_GROUP, ApplicationCommandOptionTypes.SUB_COMMAND_GROUP ],
+                [ ArgumentType.USER,              ApplicationCommandOptionTypes.USER              ]
+            ]
+            const apply = (arg: any, option: any) => {
+                if (!arg.type) throw new Error(`Argument ${arg.name} of ${command.name} has no type.`);
+                option.name = arg.name;
+                option.description = arg.description;
+                enumMap.forEach(([commandType, oceanicType]) => {
+                    if (arg.type === commandType) option.type = oceanicType;
+                });
+                const isSubcommand = arg.type === ArgumentType.SUB_COMMAND;
+                const isSubCommandGroup = arg.type === ArgumentType.SUB_COMMAND_GROUP;
+                const isString = arg.type === ArgumentType.STRING;
+                const isNumberOrInteger = arg.type === ArgumentType.NUMBER || arg.type === ArgumentType.INTEGER;
+                if (isSubcommand || isSubCommandGroup) option.options = [];
+                if (!isSubcommand && !isSubCommandGroup) {
+                    option.required = !arg.optional;
+                }
+                if (isString) {
+                    if (arg.choices) option.choices = arg.choices;
+                    if (arg.minLength) option.minLength = arg.minLength;
+                    if (arg.maxLength) option.maxLength = arg.maxLength;
+                }
+                if (isString || isNumberOrInteger) {
+                    option.autocomplete = !!arg.autocomplete;
+                }
+                if (isNumberOrInteger) {
+                    if (arg.minValue) option.minValue = arg.minValue;
+                    if (arg.maxValue) option.maxValue = arg.maxValue;
+                }
+                if (arg.type === ArgumentType.CHANNEL) {
+                    if (arg.channelTypes) option.channelTypes = arg.channelTypes;
+                }
+                // todo: support attachment uploads
+            }
+
+            const parseArgument = (arg: any, parent: any) => {
+                let argumentData = {};
+                apply(arg, argumentData);
+                if (arg.arguments && (arg.type === ArgumentType.SUB_COMMAND || arg.type === ArgumentType.SUB_COMMAND_GROUP)) {
+                    for (const _argument of arg.arguments) {
+                        parseArgument(_argument, argumentData);
+                    }
+                }
+                if (parent.options) parent.options.push(argumentData);
+            }
+            for (const _argument of command.arguments) {
+                parseArgument(_argument, options);
+            }
+        }
+        // if (command.arguments && command.getType() == ApplicationCommandTypes.CHAT_INPUT) {
+        //     // This will
+        //     (options as CreateChatInputApplicationCommandOptions).options = [];
+        // }
+        return options;
+    }
+    /**
+     * Creates a hash of the command. Useful for 
+     * @param command The command object to create a hash for
+     * @returns 
+     */
+    public static createHash(command: Command): string {
+        const hash = crypto.createHash('md5');
+        return hash.update([
+            command.slashName || command.name,
+            (command.slashArguments || '-').toString(),
+            (command.prefixArguments || '-').toString(),
+            command.description,
+            command.permissions?.authorGuild || '-',
+            command.nameLocalizations || '-',
+            command.descriptionLocalizations || '-'
+        ].toString()).digest('hex');
     }
 }
 

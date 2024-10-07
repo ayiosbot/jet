@@ -2,8 +2,15 @@
   "name": "@ayios/jet",
   "version": "0.0.1",
   "description": "Oceanic.js command library.",
-  "main": "./dist/src/index.js",
-  "types": "./dist/src/types/index.d.ts",
+  "main": "./dist/index.js",
+  "typesa": "./dist/index.d.ts",
+  "exportsa": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "bun": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
   "scripts": {
     "docs:build": "rm ./docs/ -rf && npx --yes typedoc --options static/typedoc.json"
   },
@@ -27,15 +34,16 @@
     "node": ">=18.13.0"
   },
   "devDependencies": {
+    "@ayios/typedoc-plugin-merge-modules": "^5.1.0",
     "oceanic.js": "^1.11.1",
     "typedoc": "^0.25.13",
     "typedoc-plugin-extras": "3.0.0",
-    "typedoc-plugin-mdn-links": "^3.1.19",
-    "@ayios/typedoc-plugin-merge-modules": "^5.1.0"
+    "typedoc-plugin-mdn-links": "^3.1.19"
   },
   "dependencies": {
     "@ayios/collection": "^0.0.2",
     "@ayios/logger": "^0.0.6",
+    "@ayios/result": "^0.1.0",
     "@ayios/util": "^1.0.0"
   }
 }

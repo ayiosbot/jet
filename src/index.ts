@@ -1,10 +1,12 @@
-export type * from "./types/index";
-// // Channel and Interaction MUST be at the top due to circular imports
-// export { default as ClientApplication } from "./structures/ClientApplication";
-// export * from "./Constants";
-// export * as Constants from "./Constants";
-// export type * from "./gateway/Dispatcher";
-
-// // export { default as X } from "./path"
 export { default as Client } from './structures/Client';
+export { default as Module } from './structures/Module';
+export { default as Registry } from './structures/Registry';
+export { default as Dispatcher } from './structures/Dispatcher'
+export { default as Event } from './structures/Event';
+
+export * from './structures/Client';
+export * from './structures/Module';
+export * from './structures/Registry';
+export * from './structures/Dispatcher';
+export * from './structures/Event';
 export * from './structures/Command';
