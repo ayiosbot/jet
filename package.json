@@ -1,6 +1,6 @@
 {
   "name": "@ayios/jet",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Oceanic.js command library.",
   "main": "./dist/index.js",
   "typesa": "./dist/index.d.ts",

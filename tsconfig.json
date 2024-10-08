@@ -34,7 +34,7 @@
     "resolveJsonModule": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "test"],
+  "exclude": ["node_modules", "dist", "test","examples"],
   "typedocOptions": {
     "entryPoints": [ "src/index.ts" ],
     "out": "docs",

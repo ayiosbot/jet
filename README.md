@@ -1,62 +1,28 @@
 <p align="center">
-  <img width=60% src="https://user-images.githubusercontent.com/68125679/193473284-e14ea33d-b086-4c28-870d-4221e766d775.png">
+  <img width=30% src="https://logo.ayios.xyz/AyiosTransparent">
   <br>
-  <a href="https://npmjs.com/package/oceanic.js"><img src="https://img.shields.io/npm/v/oceanic.js.svg?style=flat-square&color=informational"></a>
-  <img src="https://img.shields.io/github/stars/OceanicJS/Oceanic?color=yellow&style=flat-square">
-  <img src="https://img.shields.io/npm/dw/oceanic.js?color=red&style=flat-square">
+  <a href="https://npmjs.com/package/@ayios/jet"><img src="https://img.shields.io/npm/v/@ayios/jet.svg?style=flat-square&color=informational"></a>
+  <img src="https://img.shields.io/github/stars/ayiosbot/jet?color=yellow&style=flat-square">
+  <img src="https://img.shields.io/npm/dw/@ayios/jets?color=red&style=flat-square">
 </p>
 
-```js
-const { Client } = require("oceanic.js");
-const client = new Client({ auth: "Bot [TOKEN]" });
+<div align="center">
+    <h1>@ayios/jet<h1>
+    <h3><b>A rust-like way of handling results.</b></h3>
+</div>
 
-client.on("ready", async() => {
-    console.log("Ready as", client.user.tag);
-});
+## About
+Jet is an open-source low-overhead command handler for oceanic.js. Documentation will come... when it at least reaches 0.1.0 (or before (0.10.0)
 
-// if you do not add a listener for the error event, any errors will cause an UncaughtError to be thrown,
-// and your process may be killed as a result.
-client.on("error", (err) => {
-    console.error("Something Broke!", err);
-});
+## Example
+this isnt ready bruh
 
-client.connect();
-```
-For more examples, see the [examples](https://github.com/OceanicJS/Oceanic/tree/dev/examples) folder on GitHub.
-<hr>
-
-## Installation
-NodeJS **18.13.0** or higher is required.
-
-**See [Development Builds](#development-builds) if you wish to install in-dev versions.**
-
-```sh
-npm i oceanic.js --omit=optional
-```
-
-If you need voice support, add `--include=optional`. Voice support is currently provided by [@discordjs/voice](https://discord.js.org/#/docs/voice/main/general/welcome).
-
-See the [examples](https://github.com/OceanicJS/Oceanic/tree/dev/examples) folder on GitHub for some examples, and visit [this site](https://docs.oceanic.ws) for documentation.
-
-### Development Builds
-```sh
-npm i oceanic.js@dev
-```
-
-The documentation under `dev` is always for the latest commit. If something isn't working that's in the documentation, you're likely looking at the wrong documentation.
-
-<hr>
-
-### Optional Dependencies
-All compression options are mutually exclusive.
-* `pako` - zlib Compression (gateway)
-* `zlib-sync` - zlib Compression (gateway, faster than pako)
-* `fzstd` - Zstandard Compression (gateway)
-* `erlpack` - Encoding (gateway, alternative to JSON)
+## License
+All code within this repository created by Ayios is under MIT license. Other code within this repository, if present, is under its own respective license which will be displayed within their respective files.
 
 ## Links
-* [Examples](https://github.com/OceanicJS/Oceanic/tree/dev/examples)
-* [Latest Release Documentation](https://docs.oceanic.ws/latest)
-* [Development Documentation](https://docs.oceanic.ws/dev)
-* [Discord Server](https://discord.gg/xZ4AhdYrf9)
-* [Source](https://github.com/OceanicJS/Oceanic)
+* ~~[Examples](https://github.com/)~~
+* ~~[Latest Release Documentation]()~~
+* [Development Documentation](https://jet.ayios.xyz)
+* [Discord Server](https://discord.gg/HupDCrXSmf)
+* [Source](https://github.com/ayiosbot/jet)
