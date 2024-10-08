@@ -3,7 +3,7 @@
   <br>
   <a href="https://npmjs.com/package/@ayios/jet"><img src="https://img.shields.io/npm/v/@ayios/jet.svg?style=flat-square&color=informational"></a>
   <img src="https://img.shields.io/github/stars/ayiosbot/jet?color=yellow&style=flat-square">
-  <img src="https://img.shields.io/npm/dw/@ayios/jets?color=red&style=flat-square">
+  <img src="https://img.shields.io/npm/dw/@ayios/jet?color=red&style=flat-square">
 </p>
 
 <div align="center">
