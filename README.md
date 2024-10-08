@@ -7,8 +7,8 @@
 </p>
 
 <div align="center">
-    <h1>@ayios/jet<h1>
-    <h3><b>A rust-like way of handling results.</b></h3>
+  <h1>@ayios/jet</h1>
+  <h3><b>An open-source command library for oceanic.js</b></h3>
 </div>
 
 ## About
