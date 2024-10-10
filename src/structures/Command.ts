@@ -485,7 +485,9 @@ export class Command implements Partial<CommandDefinition> {
                 this.prefixArguments = definition.arguments;
             }
         }
-        if (!this.prefixArguments && !this.registry.prefix) {
+        // todo: add explicit redirection for run, runPrefix, and runSlash functions
+        // if both, then it uses run, unless explicitly clarified
+        if (this.prefixArguments && !this.registry.prefix) {
             Logger.warn('Command has prefix arguments despite registry override');
         }
         if (this.slashArguments && !this.registry.slash) {
