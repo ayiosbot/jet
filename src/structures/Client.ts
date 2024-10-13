@@ -2,7 +2,10 @@
 import {
     AnyTextableChannel, CommandInteraction, CreateMessageOptions, ExecuteWebhookOptions,
     Message, Client as OceanicClient, Uncached, ClientOptions as OceanicClientOptions,
-    ClientEvents as OceanicClientEvents
+    ClientEvents as OceanicClientEvents,
+    GuildChannel,
+    Webhook,
+    AnyTextableGuildChannel
 } from 'oceanic.js';
 import Module from './Module';
 import { Command, CommandContext } from './Command';
@@ -68,7 +71,7 @@ export default class Client<DB = any> extends OceanicClient<ClientEvents> {
     public leaveGuild(guildID: string) {
         return this.rest.users.leaveGuild(guildID);
     }
-    public getChannelWebhooks(channelID: string) {
+    public async getChannelWebhooks(channelID: string) {
         return this.rest.webhooks.getForChannel(channelID);
     }
     /** Execute a webhook by URL */
@@ -81,6 +84,37 @@ export default class Client<DB = any> extends OceanicClient<ClientEvents> {
     /** Execute a webhook by its detailed information */
     public executeWebhook(webhookID: string, token: string, options: ExecuteWebhookOptions) {
         return this.rest.webhooks.execute(webhookID, token, options);
+    }
+    /** get or create a webhook (uses the bot name for identifying) */
+    public async resolveWebhook(channelID: string, filterOverride?: (webhook: Webhook) => boolean) {
+        try {
+            const webhooks = await this.getChannelWebhooks(channelID);
+            let found;
+            for (const webhook of webhooks) {
+                if (filterOverride) {
+                    if (filterOverride(webhook)) {
+                        found = webhook;
+                        break;
+                    }
+                } else {
+                    if (
+                        webhook.name === (this.user.globalName || this.user.username)
+                        || webhook.applicationID === this.application.id
+                    ) {
+                        found = webhook;
+                    }
+                }
+            }
+            if (!found) {
+                found = await this.rest.webhooks.create(channelID, {
+                    name: this.user.globalName || this.user.username,
+                    avatar: this.user.avatar
+                });
+            }
+            return Promise.resolve(found);
+        } catch (error) {
+            return Promise.reject(error);
+        }
     }
     public getMessage(channelID: string, messageID: string) {
         return this.rest.channels.getMessage(channelID, messageID);
