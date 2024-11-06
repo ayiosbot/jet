@@ -82,6 +82,7 @@ export interface CommandDefinition {
     guarded?: boolean;
     nsfw?: boolean;
     guildOnly?: boolean;
+    defer?: boolean;
     cooldown?: number;
     /** How many milliseconds before the command handler stops waiting for a result */
     timeout?: number;
@@ -458,6 +459,7 @@ export class Command implements Partial<CommandDefinition> {
     public readonly timeout?: number | undefined;
     public readonly timeoutResult?: CommandResult | undefined;
     public readonly guildOnly?: boolean | undefined;
+    public defer?: boolean | undefined;
     public readonly nsfw?: boolean | undefined;
     public readonly module!: string;
     public readonly _filename: string;

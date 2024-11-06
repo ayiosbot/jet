@@ -26,7 +26,10 @@ export default class Dispatcher {
                 }
                 if (this.client.registry.disabledCommands.has(command.name)) return;
                 if (command.guildOnly && !interaction.guildID) return;
-                this.preProcessor(command, interaction);
+                if (command.defer) {
+                    await interaction.defer();
+                    this.preProcessor(command, interaction);
+                }
             } catch (error) {
                 this.client.emit('error', error as Error);
                 this.client.reply(interaction, { content: CoreMessages.DISPATCHER.PROCESS_ERROR })
