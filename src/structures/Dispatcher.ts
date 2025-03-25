@@ -28,8 +28,8 @@ export default class Dispatcher {
                 if (command.guildOnly && !interaction.guildID) return;
                 if (command.defer) {
                     await interaction.defer();
-                    this.preProcessor(command, interaction);
                 }
+                this.preProcessor(command, interaction);
             } catch (error) {
                 this.client.emit('error', error as Error);
                 this.client.reply(interaction, { content: CoreMessages.DISPATCHER.PROCESS_ERROR })

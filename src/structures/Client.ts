@@ -42,12 +42,12 @@ export interface ClientEvents extends OceanicClientEvents {
     eventLoad:     [ event: Event<any>,       isReload: boolean ];
     eventUnload:   [ event: Event<any>,       isReload: boolean ];
     eventReload:   [ event: Event<any>                          ];
-    moduleLoad:    [ module: Module,   isReload: boolean ];
-    moduleUnload:  [ module: Module,   isReload: boolean ];
-    moduleReload:  [ module: Module                      ];
-    commandLoad:   [ command: Command, isReload: boolean ];
-    commandUnload: [ command: Command, isReload: boolean ];
-    commandReload: [ command: Command                    ];
+    moduleLoad:    [ module: Module,          isReload: boolean ];
+    moduleUnload:  [ module: Module,          isReload: boolean ];
+    moduleReload:  [ module: Module                             ];
+    commandLoad:   [ command: Command,        isReload: boolean ];
+    commandUnload: [ command: Command,        isReload: boolean ];
+    commandReload: [ command: Command                           ];
 }
 
 export default class Client<DB = any> extends OceanicClient<ClientEvents> {

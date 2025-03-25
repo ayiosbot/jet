@@ -405,6 +405,35 @@ export class CommandContext<T = any> {
     //     return this.cause.client.DataService.guild.premium.getPremium(this.guild.id, true, true);
     //     // return this.cause.client.DataProvider.guilds.fetchPremium(this.guild.id)
     // }
+    public async defer(flags?: number): Promise<void> {
+        if (this.cause instanceof Message) {
+            return Promise.resolve();
+        }
+        return this.cause.defer();
+    }
+    public async followUp(message: string | InteractionContent, doEdit: boolean = false) {
+        const payload: CreateMessageOptions = typeof message === 'string' ? { content: message } : message as InteractionContent;
+        if (this.cause instanceof Message) {
+            // payload.messageReference = { }
+            //> todo: MESSAGE FOLLOW UP SHOULD RESPOND TO THE **REPLY**, NOT THE COMMAND BEING RUN. SO, HAVE A PRIVATE COMMAND CONTEXT VARIABLE LATER ON
+            // todo: above (follow up)
+            // if (typeof message === 'string') {
+            //     message = { content: message };
+            // }
+            // this.cause.channel!.createMessage(message)
+            return Promise.resolve();
+        }
+        if (this.ephemeral) {
+            payload.flags ? payload.flags += MessageFlags.EPHEMERAL : payload.flags = MessageFlags.EPHEMERAL;
+            if (doEdit) {
+                throw new Error('cant edit yet');
+                // todo: allow editing follow up messages
+                // return this.cause.editFollowup()
+            } else {
+                return this.cause.createFollowup(payload);
+            }
+        }
+    }
     public async reply(message: string | InteractionContent, doEdit: boolean = false) {
         // todo: ALLOWED MENTIONS
         const payload: CreateMessageOptions = typeof message === 'string' ? { content: message } : message as InteractionContent;
@@ -422,9 +451,10 @@ export class CommandContext<T = any> {
             } else return this.cause.channel!.createMessage(payload);
         } else {
             if (this.ephemeral) {
-                if (payload.flags) {
-                    payload.flags += MessageFlags.EPHEMERAL;
-                } else payload.flags = MessageFlags.EPHEMERAL;
+                payload.flags ? payload.flags += MessageFlags.EPHEMERAL : payload.flags = MessageFlags.EPHEMERAL;
+                // if (payload.flags) {
+                //     payload.flags += MessageFlags.EPHEMERAL;
+                // } else payload.flags = MessageFlags.EPHEMERAL;
             }
             if (doEdit) {
                 return this.cause.editOriginal(payload);
