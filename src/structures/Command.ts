@@ -405,7 +405,7 @@ export class CommandContext<T = any> {
     //     return this.cause.client.DataService.guild.premium.getPremium(this.guild.id, true, true);
     //     // return this.cause.client.DataProvider.guilds.fetchPremium(this.guild.id)
     // }
-    public async defer(flags?: number): Promise<void> {
+    public async defer(flags?: number) {
         if (this.cause instanceof Message) {
             return Promise.resolve();
         }
@@ -557,7 +557,8 @@ export class Command implements Partial<CommandDefinition> {
             name: command.slashName!,
             description: command.description!,
             dmPermission: !command.guildOnly,
-            type: command.getType()
+            // type: command.getType(),
+            type: ApplicationCommandTypes.CHAT_INPUT
         }
         if (command.nsfw) options.nsfw = true;
         if (command.nameLocalizations) options.nameLocalizations = command.nameLocalizations;

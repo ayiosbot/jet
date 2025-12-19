@@ -7,12 +7,11 @@ import {
     Webhook,
     AnyTextableGuildChannel
 } from 'oceanic.js';
-import Module from './Module';
 import { Command, CommandContext } from './Command';
-import Registry from './Registry';
-import Event from './Event';
 import Dispatcher from './Dispatcher';
-
+import Event from './Event';
+import Module from './Module';
+import Registry from './Registry';
 
 export interface ClientOptions<DB = undefined> extends OceanicClientOptions {
     /** Command prefix. Default `;` */

@@ -5,6 +5,7 @@ import Dispatcher from './Dispatcher';
 import Module from './Module';
 import { join } from 'path';
 import crypto from 'crypto';
+import { CreateGuildApplicationCommandOptions } from 'oceanic.js';
 
 /**
  * 
@@ -146,7 +147,7 @@ export default class Registry {
                     const applicationCommands = commandArray.map(c => Command.toSlash(c));
                     list.push(new Promise<void>(async (_resolve, _reject) => {
                         try {
-                            const publishedCommands = await this.client.application.bulkEditGuildCommands(guildId, applicationCommands);
+                            const publishedCommands = await this.client.application.bulkEditGuildCommands(guildId, applicationCommands as CreateGuildApplicationCommandOptions[]);
                             // this.Logger.info(`Published ${chalk.yellow(publishedCommands.length)} guild commands for ${guildId}`);
                             _resolve();
                         } catch (error) {
