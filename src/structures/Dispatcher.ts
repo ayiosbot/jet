@@ -1,16 +1,30 @@
-import { AnyInteractionChannel, AnyInteractionGateway, AnyTextableChannel, ApplicationCommandTypes, CommandInteraction, InteractionTypes, Message, MessageFlags, PrivateChannel, Uncached } from 'oceanic.js';
-import type Client from './Client';
-import CoreMessages from '../databases/messages/Core';
-import type Registry from './Registry';
+import { AnyInteractionGateway, AnyTextableChannel, InteractionTypes, Message, MessageFlags, PrivateChannel, Uncached } from 'oceanic.js';
 import { Command, CommandCause, CommandContext, CommandResult } from './Command';
+import { Ok, Result } from '@ayios/result';
+import CoreMessages from '../databases/messages/Core';
+import type Client from './Client';
 import Util from '../Util';
 
 export default class Dispatcher {
     public readonly client: Client;
     public isEnabled: boolean = false;
     public defaultEphemeralState: boolean = false;
+    /**
+     * Developers can set this function.
+     *
+     * If a command is not resolved with Ok<void>, then it is not run. Return string for it to return that msg.
+     * @returns
+     */
+    public preProcessorCheckFn: (
+        command: Command,
+        cause: CommandCause,
+        args?: string[]
+    ) => Promise<Result<void, string | void>> = async function() {
+        return Promise.resolve(Ok());
+    };
     constructor(client: Client) {
         this.client = client;
+        // this.preProcessor = (command: Command, cause: CommandCause, args?: string[]) => {
 
         const onInteractionCreate = async (interaction: AnyInteractionGateway) => {
             if (!this.isEnabled) return;
@@ -45,11 +59,36 @@ export default class Dispatcher {
         // this.client.on('messageCreate', onMessageCreate);
     }
     async preProcessor(command: Command, cause: CommandCause, args?: string[]): Promise<void> {
-        // code here
-        // typically reserved for "blacklist checks", "premium checks", "get user data", etc
-        // This is *just* to fetch data to add onto the context data (e.g. "isPremium": true)
-        // const context = new CommandContext({ cause, command });
-        this.process(cause, command);
+        //     code here
+        //     typically reserved for "blacklist checks", "premium checks", "get user data", etc
+        //     This is *just* to fetch data to add onto the context data (e.g. "isPremium": true)
+        //     const context = new CommandContext({ cause, command });
+        try {
+            const result = await this.preProcessorCheckFn(command, cause, args);
+            if (result.isErr()) {
+                const errorMessage = result.unwrapErr();
+                if (!errorMessage) return;
+
+                if (cause instanceof Message) {
+                    cause.channel?.createMessage({
+                        messageReference: {
+                            messageID: cause.id
+                        },
+                        content: errorMessage
+                    });
+                } else {
+                    cause.reply({
+                        flags: MessageFlags.EPHEMERAL,
+                        content: errorMessage
+                    });
+                }
+
+                return
+            }
+            this.process(cause, command);
+        } catch {
+            return;
+        }
     }
     /**
      * Turn this into a proper command object

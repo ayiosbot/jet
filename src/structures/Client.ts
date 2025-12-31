@@ -3,11 +3,9 @@ import {
     AnyTextableChannel, CommandInteraction, CreateMessageOptions, ExecuteWebhookOptions,
     Message, Client as OceanicClient, Uncached, ClientOptions as OceanicClientOptions,
     ClientEvents as OceanicClientEvents,
-    GuildChannel,
-    Webhook,
-    AnyTextableGuildChannel
+    Webhook
 } from 'oceanic.js';
-import { Command, CommandContext } from './Command';
+import { Command } from './Command';
 import Dispatcher from './Dispatcher';
 import Event from './Event';
 import Module from './Module';
